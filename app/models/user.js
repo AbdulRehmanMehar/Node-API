@@ -6,8 +6,15 @@ const UserSchema = mongoose.Schema({
         default: mongoose.Types.ObjectId
     },
     name: {type: String, required: true},
-    email: {type: String, required: true},
+    email: {type: String, required: true, unique: true},
+    username: {type: String, required: true, unique: true},
     password: {type: String, required: true},
+    isverified: {type: Boolean, default: false},
+    verificationToken: {
+        type: mongoose.Schema.Types.ObjectId,
+        default: (!this.isverified) ? mongoose.Types.ObjectId : null
+    },
+    createdOn: {type: Date, default: Date.now},
     photo: {
         profile: {type: String, default: 'default-profile.png'},
         cover: {type: String, default: 'default-cover.png'},
