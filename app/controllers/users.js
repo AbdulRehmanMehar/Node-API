@@ -8,9 +8,6 @@ const User = require('../models/user');
 const secret = require('../config/secret');
 const mailer = require('../config/nodemailer');
 
-
-
-
 router.get('/', passport.authenticate('jwt', {session: false}), (req, res) => {
     User.find({}).select('-__v -password -socialConnection -email').exec()
         .then(users => {
@@ -30,40 +27,14 @@ router.get('/', passport.authenticate('jwt', {session: false}), (req, res) => {
         });    
 });
 
-
-router.get('/check/uname/:uname', (req, res) => {
-    User.findOne({username: req.body.username}).select('-password -__v').exec()
-        .then(user => {
-            if(user) {
-                res.status(200).json({
-                    success: true,
-                    message: 'User exist with this email',
-                    data: user
-                });
-            }else{
-                res.status(400).json({
-                    success: false,
-                    message: 'User does\'nt Exist',
-                    data: false,
-                });
-            }
-        }).catch(error => {
-            res.status(500).json({
-                success: false,
-                message: 'Something went wrong',
-                data: error
-            });
-        });
-});
-
 router.post('/register', (req, res) => {
     User.findOne({email: req.body.email}).exec()
         .then(record => {
             if(record){
-                res.status(400).json({
-                    success: false,
-                    message: "User already exists with this email"
-                });
+                    res.status(400).json({
+                        success: false,
+                        message: "User already exists with this email"
+                    });
             }else{
                 let user = new User({
                     name: req.body.name,
@@ -148,6 +119,65 @@ router.post('/login', (req, res) => { // Email can be username or email
         });
 });
 
+router.get('/check/uname/:uname', (req, res) => {
+    User.findOne({username: req.params.uname}).select('-password -__v').exec()
+        .then(user => {
+            if(user) {
+                res.status(200).json({
+                    success: true,
+                    message: 'User exist with this email',
+                    data: user
+                });
+            }else{
+                res.status(400).json({
+                    success: false,
+                    message: 'User does\'nt Exist',
+                    data: false,
+                });
+            }
+        }).catch(error => {
+            res.status(500).json({
+                success: false,
+                message: 'Something went wrong',
+                data: error
+            });
+        });
+});
+
+router.get('/verification/:uid/:vtoken', (req, res) => {
+    User.findById(req.params.uid).exec()
+        .then(user => {
+            if(user.isverified == false && user.verificationToken == req.params.vtoken) {
+                User.findByIdAndUpdate(user._id, {$set: {isverified: true, verificationToken: null}}, {new: true})
+                    .then(user => {
+                        res.status(200).json({
+                            success: true,
+                            message: 'User is now verified',
+                            data: user,
+                        });
+                    }).catch(error => {
+                        res.status(500).json({
+                            success: false,
+                            message: 'Something went wrong',
+                            data: error
+                        });
+                    });
+            }else{
+                res.status(400).json({
+                    success: false,
+                    message: 'Invalid Credentials',
+                    data: null
+                });
+            }
+        }).catch(error => {
+            res.status(500).json({
+                success: false,
+                message: 'Something went wrong',
+                data: error
+            });
+        });
+});
+
 // Get User By ID; ALWAYS USE DYNAMIC URLS BELOW THE STATIC URLS SO IT MAY ONLY GET CALLED IF NO STATIC URL IS FOUND
 router.get('/:uid', passport.authenticate('jwt', {session: false}), (req, res) => {
     const uid = req.params.uid;
@@ -177,7 +207,7 @@ router.get('/:uid', passport.authenticate('jwt', {session: false}), (req, res) =
 
 router.patch('/:uid', passport.authenticate('jwt', {session: false}), (req, res) => {
     const uid = req.params.uid;
-    User.findById(uid).select('-posts -friends -__v').exec()
+    User.findById(uid).select('-__v').exec()
         .then(user => {
             if(user){
                 let newUser = {
@@ -191,7 +221,8 @@ router.patch('/:uid', passport.authenticate('jwt', {session: false}), (req, res)
                         google: user.socialConnection.google,
                         twitter: user.socialConnection.twitter,
                         facebook: user.socialConnection.facebook,
-                    }
+                    },
+                    friends: user.friends
                 };
 
                 if (req.body.name != null) {
@@ -215,8 +246,51 @@ router.patch('/:uid', passport.authenticate('jwt', {session: false}), (req, res)
                 if (req.body.twitter != null) {
                     newUser.socialConnection.twitter = (req.body.twitter != user.socialConnection.twitter) ? req.body.twitter : user.socialConnection.twitter;
                 }
-                
-                User.findByIdAndUpdate(user._id, { $set: newUser }, { new: true }).select('-posts -friends -__v')
+                if(req.body.addFriend && req.body.friendID){
+                    if(newUser.friends.length == 0){
+                        User.updateOne({_id: req.body.friendID}, 
+                            {$push: {friends: {_id: uid, pending: false}}},
+                            (error, success) => console.log(error, success)
+                        );
+                        newUser.friends.push({_id: req.body.friendID, pending: true});
+                    }else{
+                        newUser.friends.forEach(friend => {
+                            // Cancel the request if Pending
+                            if(req.body.friendID == friend._id && friend.pending == true){
+                                User.updateOne({_id: req.body.friendID}, 
+                                    {$pullAll: {friends: [{_id: uid, pending: false}] }},
+                                    (error, success) => console.log(error, success)
+                                );
+                                newUser.friends.splice(newUser.friends.indexOf(i => {
+                                    return req.body.friendID == friend._id;
+                                }), 1);
+                            }else{
+                                User.updateOne({_id: req.body.friendID}, 
+                                    {$push: {friends: {_id: uid, pending: false}}},
+                                    (error, success) => console.log(error, success)
+                                );
+                                newUser.friends.push({_id: req.body.friendID, pending: true});
+                            }
+                        });
+                    }
+                }
+                if(req.body.deleteFriend && req.body.friendID){
+                    User.updateOne({_id: req.body.friendID}, 
+                        {$pullAll: {friends: [{_id: uid, pending: false}] }},
+                        (error, success) => console.log(error, success)
+                    );
+                    let remainingFriends = newUser.friends.filter(friend => {
+                        return friend._id != req.body.friendID;
+                    });
+                    newUser.friends = remainingFriends;
+                }
+                if(req.body.confirmFriend && req.body.friendID){
+                    let index = newUser.friends.findIndex(friend => friend._id == req.body.friendID);
+                    newUser.friends[index].pending = false;
+                }
+
+
+                User.findByIdAndUpdate(user._id, { $set: newUser }, { new: true }).select('-__v')
                     .then(updated => {
                         res.status(200).json({
                             success: true,
