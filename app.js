@@ -10,6 +10,7 @@ const app = express();
 mongoose.connect('mongodb://127.0.0.1:27017/sosharu', { useNewUrlParser: true });
 
 const usersController = require('./app/controllers/users');
+const postsController = require('./app/controllers/posts');
 const passportConfing = require('./app/config/passport');
 
 
@@ -25,6 +26,7 @@ passportConfing(passport);
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/users', usersController);
+app.use('/posts', postsController);
 
 app.get('/', (req, res) => {
     res.status(200).json({
