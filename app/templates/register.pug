@@ -5,5 +5,12 @@ html(lang="en")
         meta(http-equiv="X-UA-Compatible", content="ie=edge")
         title Thanks for Registration
     body
-        h1 hello #{name}
-        span token is #{verificationToken}
+        h1 Hello #{name}
+        p This email is to inform you that your email (#{email}) is used to signup at 
+            a(href="http://localhost:3000") Sosharu
+            | Please verify it by clicking 
+            a(href=`http://localhost:3000/users/verification/${_id}/${verificationToken}`) here.
+        p 
+            b Regards
+        p
+            b Sosharu Team

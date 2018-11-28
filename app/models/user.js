@@ -25,7 +25,7 @@ const UserSchema = mongoose.Schema({
         twitter: {type: Boolean, default: false},
     },
     posts: [
-        {_id: mongoose.Schema.Types.ObjectId}
+        {_id: mongoose.Schema.Types.ObjectId, isShared: {type: Boolean, default: false} }
     ],
     friends: [
         {

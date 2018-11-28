@@ -5,7 +5,6 @@ const PostSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         default: mongoose.Types.ObjectId
     },
-    sort: {type: String, default: 'photo'},
     content: String,
     likes: [
         {uid: mongoose.Schema.Types.ObjectId}, // User ID
@@ -18,6 +17,7 @@ const PostSchema = mongoose.Schema({
             },
             message: String,
             info: {
+                uid: String,
                 isReply: Boolean,
                 cid: mongoose.Schema.Types.ObjectId, // Comment ID
                 date: {type: Date, default: Date.now}

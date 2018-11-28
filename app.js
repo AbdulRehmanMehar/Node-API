@@ -7,12 +7,15 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 
 const app = express();
-mongoose.connect('mongodb://127.0.0.1:27017/sosharu', { useNewUrlParser: true });
 
+
+const secret = require('./app/config/secret');
 const usersController = require('./app/controllers/users');
 const postsController = require('./app/controllers/posts');
 const passportConfing = require('./app/config/passport');
 
+
+mongoose.connect(secret.mongodbURI, { useNewUrlParser: true });
 
 app.use(cors());
 app.use(morgan('dev'));
