@@ -6,6 +6,9 @@ const passport = require('passport');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 
+const swaggerUi = require('swagger-ui-express');
+const swaggerFile = require('./swagger_output.json');
+
 const app = express();
 
 
@@ -31,12 +34,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/users', usersController);
 app.use('/posts', postsController);
 
-app.get('/', (req, res) => {
-    res.status(200).json({
-        success: true,
-        message: 'Server is Running',
-        data: null
-    });
-});
+// app.get('/', (req, res) => {
+//     res.status(200).json({
+//         success: true,
+//         message: 'Server is Running',
+//         data: null
+//     });
+// });
+
+app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerFile));
 
 app.listen(3000);
