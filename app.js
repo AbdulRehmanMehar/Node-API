@@ -44,4 +44,4 @@ app.use('/posts', postsController);
 
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerFile));
 
-app.listen(3000);
+app.listen(process.env.PORT || 3000);
