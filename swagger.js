@@ -6,7 +6,7 @@ const doc = {
     description: 'Authentication and CRUD Operations on Post.',  // by default: ''
   },
   host: (process.env.PROD ? 'apiwithnode.herokuapp.com' : 'localhost:3000'),
-  schemes: ['http', 'https']
+  schemes: (process.env.PROD ? 'https' : 'http')
 }
 
 const outputFile = './swagger_output.json'
